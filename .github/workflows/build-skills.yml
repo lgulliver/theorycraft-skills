@@ -23,7 +23,7 @@ jobs:
           python-version: "3.13"
 
       - name: Build all skills
-        run: python3 scripts/package.py --all --output dist/
+        run: python3 scripts/package.py --all --output dist/ --opencode
 
       - name: Upload individual skill artifacts
         uses: actions/upload-artifact@v4
@@ -39,6 +39,13 @@ jobs:
           path: dist/theorycraft-suite.zip
           if-no-files-found: error
 
+      - name: Upload .opencode/skills/ artifact (for opencode)
+        uses: actions/upload-artifact@v4
+        with:
+          name: opencode-skills
+          path: .opencode/skills/
+          if-no-files-found: error
+
       - name: Upload to release
         if: github.event_name == 'release'
         env:
@@ -47,3 +54,4 @@ jobs:
           for file in dist/*.skill dist/theorycraft-suite.zip; do
             gh release upload "${{ github.event.release.tag_name }}" "$file" --clobber
           done
+          gh release upload "${{ github.event.release.tag_name }}" .opencode/skills/ --clobber

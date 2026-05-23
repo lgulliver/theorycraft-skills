@@ -10,11 +10,13 @@ Usage:
 """
 
 import argparse
+import shutil
 import zipfile
 from pathlib import Path
 
 SKILLS_DIR = Path("skills")
 BUNDLE_NAME = "theorycraft-suite.zip"
+OPENCODE_DIR = Path(".opencode")
 
 
 def parse_frontmatter_name(skill_dir: Path) -> str:
@@ -49,13 +51,32 @@ def build_skill(skill_dir: Path, output_dir: Path) -> Path:
     return skill_path
 
 
-def build_all(output_dir: Path) -> list[Path]:
-    """Build all skills and the suite bundle."""
+def build_all(output_dir: Path, opencode: bool = False) -> list[Path]:
+    """Build all skills. If opencode=True, also install into .opencode/skills/."""
     built: list[Path] = []
     for entry in sorted(SKILLS_DIR.iterdir()):
         if entry.is_dir() and (entry / "SKILL.md").exists():
             built.append(build_skill(entry, output_dir))
+            if opencode:
+                install_to_opencode(entry)
     return built
+
+
+def install_to_opencode(skill_dir: Path) -> Path:
+    """Copy skill directory into .opencode/skills/<name>/ for opencode discovery."""
+    name = parse_frontmatter_name(skill_dir)
+    dest = OPENCODE_DIR / "skills" / name
+    dest.mkdir(parents=True, exist_ok=True)
+    for entry in skill_dir.iterdir():
+        if entry.name == ".DS_Store":
+            continue
+        dest_entry = dest / entry.name
+        if entry.is_dir():
+            shutil.copytree(entry, dest_entry, dirs_exist_ok=True)
+        else:
+            shutil.copy2(entry, dest_entry)
+    print(f"  Installed {dest}")
+    return dest
 
 
 def build_suite_bundle(built: list[Path], output_dir: Path) -> Path:
@@ -74,6 +95,7 @@ def main():
     group.add_argument("skill_dir", nargs="?", type=Path, help="Path to a skill directory (e.g. skills/theorycraft-architecture)")
     group.add_argument("--all", action="store_true", help="Build all skills and the suite bundle")
     parser.add_argument("--output", "-o", type=Path, default=Path("."), help="Output directory (default: current directory)")
+    parser.add_argument("--opencode", action="store_true", help="Also install skills into .opencode/skills/ for opencode")
     args = parser.parse_args()
 
     output_dir = args.output.resolve()
@@ -81,7 +103,7 @@ def main():
 
     if args.all:
         print("Building all skills...")
-        built = build_all(output_dir)
+        built = build_all(output_dir, opencode=args.opencode)
         print(f"\nBuilt {len(built)} skills.")
         suite = build_suite_bundle(built, output_dir)
         print(f"Suite bundle: {suite}")
@@ -91,6 +113,8 @@ def main():
             raise SystemExit(f"Error: {skill_dir} is not a directory")
         print(f"Building {skill_dir.name}...")
         build_skill(skill_dir, output_dir)
+        if args.opencode:
+            install_to_opencode(skill_dir)
 
 
 if __name__ == "__main__":

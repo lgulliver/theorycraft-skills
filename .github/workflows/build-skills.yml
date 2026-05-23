@@ -51,7 +51,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          for file in dist/*.skill dist/theorycraft-suite.zip; do
+          for file in dist/*.skill dist/theorycraft-suite.zip dist/opencode-skills.zip; do
             gh release upload "${{ github.event.release.tag_name }}" "$file" --clobber
           done
-          gh release upload "${{ github.event.release.tag_name }}" .opencode/skills/ --clobber

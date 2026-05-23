@@ -17,6 +17,7 @@ from pathlib import Path
 SKILLS_DIR = Path("skills")
 BUNDLE_NAME = "theorycraft-suite.zip"
 OPENCODE_DIR = Path(".opencode")
+OPENCODE_BUNDLE_NAME = "opencode-skills.zip"
 
 
 def parse_frontmatter_name(skill_dir: Path) -> str:
@@ -89,6 +90,18 @@ def build_suite_bundle(built: list[Path], output_dir: Path) -> Path:
     return bundle_path
 
 
+def build_opencode_bundle(output_dir: Path) -> Path:
+    """Zip .opencode/skills/ into a release-ready bundle."""
+    source_dir = OPENCODE_DIR / "skills"
+    bundle_path = output_dir / OPENCODE_BUNDLE_NAME
+    with zipfile.ZipFile(bundle_path, "w", zipfile.ZIP_DEFLATED) as zf:
+        for filepath in sorted(source_dir.rglob("*")):
+            if filepath.is_file() and filepath.name != ".DS_Store":
+                zf.write(filepath, filepath.relative_to(OPENCODE_DIR))
+    print(f"  Built {bundle_path}")
+    return bundle_path
+
+
 def main():
     parser = argparse.ArgumentParser(description="Build theorycraft skill packages")
     group = parser.add_mutually_exclusive_group(required=True)
@@ -107,6 +120,9 @@ def main():
         print(f"\nBuilt {len(built)} skills.")
         suite = build_suite_bundle(built, output_dir)
         print(f"Suite bundle: {suite}")
+        if args.opencode:
+            opencode_bundle = build_opencode_bundle(output_dir)
+            print(f"Opencode bundle: {opencode_bundle}")
     else:
         skill_dir = args.skill_dir.resolve()
         if not skill_dir.is_dir():

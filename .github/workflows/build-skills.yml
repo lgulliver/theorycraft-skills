@@ -1,0 +1,49 @@
+name: Build skills
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Build all skills
+        run: python3 scripts/package.py --all --output dist/
+
+      - name: Upload individual skill artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: skill-files
+          path: dist/*.skill
+          if-no-files-found: error
+
+      - name: Upload suite bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: suite-bundle
+          path: dist/theorycraft-suite.zip
+          if-no-files-found: error
+
+      - name: Upload to release
+        if: github.event_name == 'release'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for file in dist/*.skill dist/theorycraft-suite.zip; do
+            gh release upload "${{ github.event.release.tag_name }}" "$file" --clobber
+          done

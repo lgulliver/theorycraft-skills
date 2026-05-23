@@ -10,15 +10,11 @@ Usage:
 """
 
 import argparse
-import os
-import shutil
-import sys
 import zipfile
 from pathlib import Path
 
 SKILLS_DIR = Path("skills")
-BUNDLES_DIR = Path("bundles")
-SUITE_BUNDLE = BUNDLES_DIR / "theorycraft-suite.zip"
+BUNDLE_NAME = "theorycraft-suite.zip"
 
 
 def parse_frontmatter_name(skill_dir: Path) -> str:
@@ -64,12 +60,12 @@ def build_all(output_dir: Path) -> list[Path]:
 
 def build_suite_bundle(built: list[Path], output_dir: Path) -> Path:
     """Zip all built .skill files into the suite bundle."""
-    BUNDLES_DIR.mkdir(parents=True, exist_ok=True)
-    with zipfile.ZipFile(SUITE_BUNDLE, "w", zipfile.ZIP_DEFLATED) as zf:
+    bundle_path = output_dir / BUNDLE_NAME
+    with zipfile.ZipFile(bundle_path, "w", zipfile.ZIP_DEFLATED) as zf:
         for skill_path in built:
             zf.write(skill_path, skill_path.name)
-    print(f"  Built {SUITE_BUNDLE}")
-    return SUITE_BUNDLE
+    print(f"  Built {bundle_path}")
+    return bundle_path
 
 
 def main():
